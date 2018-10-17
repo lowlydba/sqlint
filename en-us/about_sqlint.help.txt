@@ -1,0 +1,12 @@
+TOPIC
+	about_sqlint
+	
+SHORT DESCRIPTION
+	A short synopsis of sqlint
+
+LONG DESCRIPTION
+	A more detailed description of sqlint,
+	Should tell the user how to get started with this module.
+	
+KEYWORDS
+	module development debugging
