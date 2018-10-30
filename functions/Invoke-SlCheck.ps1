@@ -58,7 +58,7 @@ function Invoke-SlCheck {
                 Fragment       = $ScriptObject
                 Errors         = $Errors
             }
-            Invoke-Pester -Script @{Path = "./tests/Parse.Test.ps1"; Parameters = @{ScriptObject = $ScriptObject}} #-Tag "Parse"
+            Invoke-Pester -Script @{Path = "$PSScriptRoot/../tests/Parse.Test.ps1"; Parameters = @{ScriptObject = $ScriptObject}} #-Tag "Parse"
         }
     }
     end {

@@ -31,9 +31,9 @@ Describe "Grant" -Tag "Security" {
         ForEach ($Batch in $ScriptObject.Fragment.Batches) {
             $Statements = Get-Statement -Batch $Batch 
             ForEach ($Statement in $Statements.Statement) {
-                $Action = $Statement.GetType().Name
-                It "substatement should not GRANT" {
-                    $Action | Should -Not -Be "GrantStatement" -Because "permission changes are not allowed in scripts"
+                $Action = ($Statement.GetType().BaseType).Name
+                It "substatement should not be a security statement" {
+                    $Action | Should -Not -Be "SecurityStatement" -Because "permission changes are not allowed in scripts"
                 }
             }
         }
