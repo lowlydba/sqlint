@@ -1,8 +1,22 @@
+function Get-IndividualStatement {
+    Param (
+        [Parameter(Mandatory = $true)]
+        $Statements
+    )
+    #Iterate through all statements
+    ForEach ($Statement in $statements) {
+        $StatementObject = [PSCustomObject]@{
+            Statement = $Statement
+        }
+        $Statements += $StatementObject
+    }
+    return $StatementObject
+}
+
 function Get-Statement {
     [CmdletBinding()]
     Param (
-		[Parameter(
-            Mandatory = $true)]
+		[Parameter(Mandatory = $true)]
             $Batch)
     begin {
         $Statements = @()
@@ -12,32 +26,37 @@ function Get-Statement {
             $Type = $Statement.GetType().Name
             # Handle IF Statements
             If ($Type -eq "IfStatement") {
-                # Add predicate statement 
-                $StatementObject = [PSCustomObject]@{
-                    Statement = $Statement.Predicate
+                # Add THEN statements
+                If ($Statement.ThenStatement.StatementList) {
+                    $Statements += Get-IndividualStatement -Statements $Statement.ThenStatement.StatementList.Statements
                 }
-                $Statements += $StatementObject
+                Else {
+                    $Statements += Get-IndividualStatement -Statements $Statement.ThenStatement
+                }
 
-                # Add statements within IF clause
-                ForEach ($su in $Statement.ThenStatement.StatementList.Statements) {
-                    $StatementObject = [PSCustomObject]@{
-                        Statement     = $su
-                    }
-                    $Statements += $StatementObject
+                # Add ELSE statements
+                If ($Statement.ElseStatement.StatementList) {
+                    $Statements += Get-IndividualStatement -Statements $Statement.ElseStatement.StatementList.Statements
+                }
+                Else {
+                    $Statements += Get-IndividualStatement -Statements $Statement.ElseStatement
                 }
             }
             # Handle WHILE Statements
             ElseIf ($Type -eq "WhileStatement") {
-                # Add predicate statement
-                $StatementObject = [PSCustomObject]@{
-                    Statement = $Statement.Predicate
-                }
-                $Statements += $StatementObject
                 
                 # Add statements within loop
-                ForEach ($su in $Statement.Statement.StatementList.Statements) {
+                If ($Statement.Statement.StatementList) {
+                    ForEach ($su in $Statement.Statement.StatementList.Statements) {
+                        $StatementObject = [PSCustomObject]@{
+                            Statement     = $su
+                        }
+                        $Statements += $StatementObject
+                    }
+                }
+                Else {
                     $StatementObject = [PSCustomObject]@{
-                        Statement     = $su
+                        Statement     = $Statement.Statement
                     }
                     $Statements += $StatementObject
                 }
@@ -45,10 +64,7 @@ function Get-Statement {
             }
             #Normal Statement
             Else {
-                $StatementObject = [PSCustomObject]@{
-                    Statement     = $statement
-                }
-                $Statements += $StatementObject
+                $Statements += Get-IndividualStatement -Statements $Statement
             }
         }
     }

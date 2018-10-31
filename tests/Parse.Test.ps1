@@ -26,31 +26,45 @@ Describe "Parse" -Tag "Parse" {
     }
 }
 
-Describe "Grant" -Tag "Security" {
-    Context "Checking for grant statements" {
+Describe "Security" -Tag "Security" {
+    Context "Checking for security statements" {
         ForEach ($Batch in $ScriptObject.Fragment.Batches) {
             $Statements = Get-Statement -Batch $Batch 
             ForEach ($Statement in $Statements.Statement) {
                 $StatementType = ($Statement.GetType().BaseType).Name
-                It "substatement should not be a security statement" {
-                    $StatementType | Should -Not -Be "SecurityStatement" -Because "permission changes are not allowed in scripts."
+                It "Statement should not be a security statement." {
+                    $StatementType | Should -Not -Be "SecurityStatement" -Because "security statement should not exist on line $($Statement.StartLine), column $($Statement.StartColumn)"
                 }
             }
         }
     }
 }
 
-Describe "delete without where" -Tag "Best practice" {
-    Context "Checking for delete statement without where clause" {
+Describe "Best Practices" -Tag "BestPractice" {
+    Context "Checking DELETE has WHERE" {
         ForEach ($Batch in $ScriptObject.Fragment.Batches) {
             $Statements = Get-Statement -Batch $Batch 
             ForEach ($Statement in $Statements.Statement) {
-                $WhereClause = $Statement.DeleteSpecification.WhereClause
-                It "Where clause should not be null" {
-                    $WhereClause | Should -Not -Be $null -Because "We don't want to delete the whole table; If we do, use TRUNCATE instead."
+                #Check if statement is a DELETE
+                If ($Statement.DeleteSpecification) {
+                    $Skip = $false
+                    $WhereClause = $Statement.DeleteSpecification.WhereClause
+                }
+                Else {
+                    $Skip = $true
+                }
+                It "Statement with DELETE has a WHERE." -Skip:$Skip {
+                    $WhereClause | Should -Not -Be $null -Because "a WHERE clause should exist on line $($Statement.StartLine), column $($Statement.StartColumn)"
                 }
             }
         }
     }
+    #Context All objects should include schema name
+    #Context Select * should not be used
+    #Context Update without WHERE should not exist
+    #TOP without ORDER BY
+    # TOP 100 %
+    # == NULL or <> NULL 
+    # Use of @@IDENTITY
 }
 

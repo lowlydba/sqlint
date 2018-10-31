@@ -10,7 +10,7 @@ function Invoke-SlCheck {
         [Parameter(
             Mandatory = $false)]
             [System.IO.FileInfo]
-            $ScriptDomAssembly
+            $ScriptDomAssembly = "$PSSCriptRoot\..\internal\bin\Microsoft.SqlServer.TransactSql.ScriptDom.dll"
     )
 
     begin {
@@ -58,7 +58,7 @@ function Invoke-SlCheck {
                 Fragment       = $ScriptObject
                 Errors         = $Errors
             }
-            
+
             Invoke-Pester -Script @{Path = "$PSScriptRoot/../tests/Parse.Test.ps1"; Parameters = @{ScriptObject = $ScriptObject}} #-Tag "Parse"
         }
     }
