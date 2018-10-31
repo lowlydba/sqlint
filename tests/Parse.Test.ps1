@@ -66,5 +66,6 @@ Describe "Best Practices" -Tag "BestPractice" {
     # TOP 100 %
     # == NULL or <> NULL 
     # Use of @@IDENTITY
+    # NVARCHAR / VARCHAR without length
 }
 
