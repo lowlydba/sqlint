@@ -31,11 +31,26 @@ Describe "Grant" -Tag "Security" {
         ForEach ($Batch in $ScriptObject.Fragment.Batches) {
             $Statements = Get-Statement -Batch $Batch 
             ForEach ($Statement in $Statements.Statement) {
-                $Action = ($Statement.GetType().BaseType).Name
+                $StatementType = ($Statement.GetType().BaseType).Name
                 It "substatement should not be a security statement" {
-                    $Action | Should -Not -Be "SecurityStatement" -Because "permission changes are not allowed in scripts"
+                    $StatementType | Should -Not -Be "SecurityStatement" -Because "permission changes are not allowed in scripts."
                 }
             }
         }
     }
 }
+
+Describe "delete without where" -Tag "Best practice" {
+    Context "Checking for delete statement without where clause" {
+        ForEach ($Batch in $ScriptObject.Fragment.Batches) {
+            $Statements = Get-Statement -Batch $Batch 
+            ForEach ($Statement in $Statements.Statement) {
+                $WhereClause = $Statement.DeleteSpecification.WhereClause
+                It "Where clause should not be null" {
+                    $WhereClause | Should -Not -Be $null -Because "We don't want to delete the whole table; If we do, use TRUNCATE instead."
+                }
+            }
+        }
+    }
+}
+
