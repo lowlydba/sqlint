@@ -14,7 +14,6 @@ function Invoke-SlCheck {
     )
 
     begin {
-        
         #Load assembly file and create parser
         $StoredScriptDomAssembly = Get-PSFConfigValue -FullName "SqlLint.ScriptDomAssembly.Path"
         If ($null -eq $ScriptDomAssembly -and $null -eq $StoredScriptDomAssembly) {
@@ -30,7 +29,7 @@ function Invoke-SlCheck {
         $Parser = Get-Parser -ScriptDomAssembly $ScriptDomAssembly
     }
     process {
-        $FileExtension = [System.IO.Path]::GetExtension($File) 
+        $FileExtension = [System.IO.Path]::GetExtension($File)
         If ($FileExtension -ne ".sql") {
             Write-PSFMessage -Level "Warning" -Message "Not a sql file, skipping $($File.Name)."
         }

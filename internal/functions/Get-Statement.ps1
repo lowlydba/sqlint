@@ -8,9 +8,9 @@ function Get-IndividualStatement {
         $StatementObject = [PSCustomObject]@{
             Statement = $Statement
         }
-        $Statements += $StatementObject
+        $StatementList += $StatementObject
     }
-    return $StatementObject
+    return $StatementList
 }
 
 function Get-Statement {
@@ -60,7 +60,23 @@ function Get-Statement {
                     }
                     $Statements += $StatementObject
                 }
-
+            }
+            # Handle stored proc contents
+            ElseIf ($Type -eq "CreateProcedureStatement") {
+                $Statements += $Statement
+                If ($Statement.StatementList) {
+                    ForEach ($su in $Statement.StatementList.Statements) {
+                        ForEach ($su2 in $su.StatementList.Statements) {
+                            $Statements += Get-IndividualStatement -Statements $su2
+                        }
+                    }
+                }
+              <#  Else {
+                    $StatementObject = [PSCustomObject]@{
+                        Statement     = $Statement.Statement
+                    }
+                    $Statements += $StatementObject
+                }#>
             }
             #Normal Statement
             Else {

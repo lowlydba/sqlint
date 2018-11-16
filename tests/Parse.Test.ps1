@@ -1,4 +1,4 @@
-#requires -Modules @{ModuleName="Pester"; ModuleVersion = "4.4.0"} 
+#requires -Modules @{ModuleName="Pester"; ModuleVersion = "4.4.0"}
 
 [CmdletBinding()]
 Param(
@@ -19,7 +19,7 @@ Describe "Parse" -Tag "Parse" {
                 $ErrorMessage = $err.Message
                 $ErrorLine = $err.Line
                 It "should not have an error message" {
-                    $ErrorMessage | Should -Be $null -Because "an error should not exist on line $ErrorLine"                
+                    $ErrorMessage | Should -Be $null -Because "an error should not exist on line $ErrorLine"
                 }
             }
         }
@@ -29,7 +29,7 @@ Describe "Parse" -Tag "Parse" {
 Describe "Security" -Tag "Security" {
     Context "Checking for security statements" {
         ForEach ($Batch in $ScriptObject.Fragment.Batches) {
-            $Statements = Get-Statement -Batch $Batch 
+            $Statements = Get-Statement -Batch $Batch
             ForEach ($Statement in $Statements.Statement) {
                 $StatementType = ($Statement.GetType().BaseType).Name
                 It "Statement should not be a security statement." {
@@ -43,10 +43,10 @@ Describe "Security" -Tag "Security" {
 Describe "Best Practices" -Tag "BestPractice" {
     Context "Checking DELETE has WHERE" {
         ForEach ($Batch in $ScriptObject.Fragment.Batches) {
-            $Statements = Get-Statement -Batch $Batch 
+            $Statements = Get-Statement -Batch $Batch
             ForEach ($Statement in $Statements.Statement) {
-                #Check if statement is a DELETE
-                If ($Statement.DeleteSpecification) {
+                $StatementType = ($Statement.GetType()).Name
+                If ($StatementType -eq "DeleteStatement") {
                     $Skip = $false
                     $WhereClause = $Statement.DeleteSpecification.WhereClause
                 }
@@ -54,18 +54,37 @@ Describe "Best Practices" -Tag "BestPractice" {
                     $Skip = $true
                 }
                 It "Statement with DELETE has a WHERE." -Skip:$Skip {
-                    $WhereClause | Should -Not -Be $null -Because "a WHERE clause should exist on line $($Statement.StartLine), column $($Statement.StartColumn)"
+                    $WhereClause | Should -Not -Be $null -Because "a WHERE clause should exist on the statement on line $($Statement.StartLine), column $($Statement.StartColumn)"
                 }
             }
         }
     }
+    Context "sp prefix for stored procedures" {
+        ForEach ($Batch in $ScriptObject.Fragment.Batches) {
+            $Statements = Get-Statement -Batch $Batch
+            ForEach ($Statement in $Statements) {
+                $StatementType = ($Statement.GetType()).Name
+                If ($StatementType -eq "CreateProcedureStatement") {
+                    $Skip = $false
+                    $StoredProcName = $Statement.ProcedureReference.Name.BaseIdentifier.Value
+                }
+                Else {
+                    $Skip = $true
+                }
+                It "Stored procedure with sp_ prefix" -Skip:$Skip {
+                    $StoredProcName | Should -Not -BeLike "sp_*" -Because "that is bad naming.  $($Statement.StartLine), column $($Statement.StartColumn)"
+                }
+            }
+        }
+    }
+}
+
+
     #Context All objects should include schema name
     #Context Select * should not be used
     #Context Update without WHERE should not exist
     #TOP without ORDER BY
     # TOP 100 %
-    # == NULL or <> NULL 
+    # == NULL or <> NULL
     # Use of @@IDENTITY
     # NVARCHAR / VARCHAR without length
-}
-
