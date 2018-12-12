@@ -56,7 +56,7 @@ function Get-Statement {
                 else {
                     $Statements += Get-IndividualStatement -Statements $Statement
                 }
-            }
+            }            
             # Handle WHILE Statements
             ElseIf ($Type -eq "WhileStatement") {
                 
@@ -92,6 +92,12 @@ function Get-Statement {
                     }
                     $Statements += $StatementObject
                 }#>
+            }
+            #DeclareVariable Statement
+            ElseIf ($Type -eq "DeclareVariableStatement") {                                
+                    ForEach ($su in $Statement.Declarations) {
+                        $Statements += Get-IndividualStatement -Statements $su
+                    }                
             }
             #Normal Statement
             Else {
