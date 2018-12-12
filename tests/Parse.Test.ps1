@@ -151,6 +151,25 @@ Describe "Best Practices" -Tag "BestPractice" {
             }
         }
     }
+
+    Context "Checking NVARCHAR / VARCHAR without length" {
+        ForEach ($Batch in $ScriptObject.Fragment.Batches) {
+            $Statements = Get-Statement -Batch $Batch
+            ForEach ($Statement in $Statements.Statement) {
+                $StatementType = ($Statement.GetType()).Name
+                If ($StatementType -eq "DeclareVariableElement" -and $Statement.DataType.SqlDataTypeOption.ToString() -like "*VarChar") {
+                    $Skip = $false
+                    $ElementLength = $Statement.DataType.Parameters[0]
+                }
+                Else {
+                    $Skip = $true
+                }
+                It "Variable NVARCHAR / VARCHAR without length" -Skip:$Skip {
+                    $ElementLength | Should -Not -Be $NULL -Because "a length for NVARCHAR / VARCHAR should be specified on line $($Statement.StartLine), column $($Statement.StartColumn)"
+                }
+            }
+        }
+    }
    
     Context "sp prefix for stored procedures" {
         ForEach ($Batch in $ScriptObject.Fragment.Batches) {
@@ -172,12 +191,7 @@ Describe "Best Practices" -Tag "BestPractice" {
     }    
 }
 
-
-    #Context All objects should include schema name
-    #Context Select * should not be used
-    #Context Update without WHERE should not exist
-    #TOP without ORDER BY
-    # TOP 100 %
+    #Context All objects should include schema name    
     # == NULL or <> NULL
-    # Use of @@IDENTITY
-    # NVARCHAR / VARCHAR without length
+    
+    
