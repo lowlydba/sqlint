@@ -71,12 +71,8 @@ function Get-Statement {
                         }
                     }
                 }
-              <#  Else {
-                    $StatementObject = [PSCustomObject]@{
-                        Statement     = $Statement.Statement
-                    }
-                    $Statements += $StatementObject
-                }#>
+            # BLOCK FOR BEGIN/END
+            
             }
             #Normal Statement
             Else {
