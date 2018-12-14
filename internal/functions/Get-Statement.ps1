@@ -1,3 +1,4 @@
+
 function Get-IndividualStatement {
     Param (
         [Parameter(Mandatory = $true)]
@@ -28,20 +29,35 @@ function Get-Statement {
             If ($Type -eq "IfStatement") {
                 # Add THEN statements
                 If ($Statement.ThenStatement.StatementList) {
-                    $Statements += Get-IndividualStatement -Statements $Statement.ThenStatement.StatementList.Statements
-                }
+                    ForEach ($su in $Statement.ThenStatement.StatementList.Statements) {
+                        $Statements += Get-IndividualStatement -Statements $su
+                    }
+                }                
                 Else {
                     $Statements += Get-IndividualStatement -Statements $Statement.ThenStatement
                 }
-
-                # Add ELSE statements
-                If ($Statement.ElseStatement.StatementList) {
-                    $Statements += Get-IndividualStatement -Statements $Statement.ElseStatement.StatementList.Statements
-                }
-                Else {
-                    $Statements += Get-IndividualStatement -Statements $Statement.ElseStatement
+                If ($null -ne ($Statement.ElseStatement)){
+                    # Add ELSE statements
+                    If ($Statement.ElseStatement.StatementList) {
+                        $Statements += Get-IndividualStatement -Statements $Statement.ElseStatement.StatementList.Statements
+                    }
+                    Else {
+                        $Statements += Get-IndividualStatement -Statements $Statement.ElseStatement
+                    }
                 }
             }
+            #Handle BEGIN END Statements
+            ElseIf ($Type -eq "BeginEndBlockStatement") {
+                
+                If ($Statement.StatementList) {
+                    ForEach ($su in $Statement.StatementList.Statements) {
+                        $Statements += Get-IndividualStatement -Statements $su
+                    }
+                }
+                else {
+                    $Statements += Get-IndividualStatement -Statements $Statement
+                }
+            }            
             # Handle WHILE Statements
             ElseIf ($Type -eq "WhileStatement") {
                 
@@ -71,8 +87,18 @@ function Get-Statement {
                         }
                     }
                 }
-            # BLOCK FOR BEGIN/END
-            
+              <#  Else {
+                    $StatementObject = [PSCustomObject]@{
+                        Statement     = $Statement.Statement
+                    }
+                    $Statements += $StatementObject
+                }#>
+            }
+            #DeclareVariable Statement
+            ElseIf ($Type -eq "DeclareVariableStatement") {                                
+                    ForEach ($su in $Statement.Declarations) {
+                        $Statements += Get-IndividualStatement -Statements $su
+                    }                
             }
             #Normal Statement
             Else {

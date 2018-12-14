@@ -59,6 +59,118 @@ Describe "Best Practices" -Tag "BestPractice" {
             }
         }
     }
+    Context "Checking UPDATE has WHERE" {
+        ForEach ($Batch in $ScriptObject.Fragment.Batches) {
+            $Statements = Get-Statement -Batch $Batch
+            ForEach ($Statement in $Statements.Statement) {
+                $StatementType = ($Statement.GetType()).Name
+                If ($StatementType -eq "UpdateStatement") {
+                    $Skip = $false
+                    $WhereClause = $Statement.UpdateSpecification.WhereClause
+                }
+                Else {
+                    $Skip = $true
+                }
+                It "Statement with UPDATE has a WHERE." -Skip:$Skip {
+                    $WhereClause | Should -Not -Be $null -Because "a WHERE clause should exist on the statement on line $($Statement.StartLine), column $($Statement.StartColumn)"
+                }
+            }
+        }
+    }
+    Context "Checking SELECT with Star" {
+        ForEach ($Batch in $ScriptObject.Fragment.Batches) {
+            $Statements = Get-Statement -Batch $Batch
+            ForEach ($Statement in $Statements.Statement) {
+                $StatementType = ($Statement.GetType()).Name
+                If ($StatementType -eq "SelectStatement") {
+                    $Skip = $false
+                    $SelectStar = $Statement.QueryExpression.SelectElements[0].GetType().Name
+                }
+                Else {
+                    $Skip = $true
+                }
+                It "Statement with SELECT (*)" -Skip:$Skip {
+                    $SelectStar | Should -Not -Be "SelectStarExpression" -Because "a SELECT statement should have the columns specified on line $($Statement.StartLine), column $($Statement.StartColumn)"
+                }
+            }
+        }
+    }
+    Context "Checking SELECT TOP without ORDERBY" {
+        ForEach ($Batch in $ScriptObject.Fragment.Batches) {
+            $Statements = Get-Statement -Batch $Batch
+            ForEach ($Statement in $Statements.Statement) {
+                $StatementType = ($Statement.GetType()).Name
+                $SelectTOP = $Statement.QueryExpression.TopRowFilter
+                If ($StatementType -eq "SelectStatement" -and $SelectTOP -ne $null) {
+                    $Skip = $false                    
+                    $SelectOrderBy = $Statement.QueryExpression.OrderByClause
+                }
+                Else {
+                    $Skip = $true
+                }
+                It "Statement TOP without ORDERBY" -Skip:$Skip {                    
+                    $SelectOrderBy | Should -Not -Be $null -Because "a SELECT TOP statement should have ORDERBY Clause specified on line $($Statement.StartLine), column $($Statement.StartColumn)"
+                }
+            }
+        }
+    }
+    Context "Checking SELECT TOP 100 PERCENT" {
+        ForEach ($Batch in $ScriptObject.Fragment.Batches) {
+            $Statements = Get-Statement -Batch $Batch
+            ForEach ($Statement in $Statements.Statement) {
+                $StatementType = ($Statement.GetType()).Name
+                $SelectTOPPercent = $Statement.QueryExpression.TopRowFilter
+                If ($StatementType -eq "SelectStatement" -and $SelectTOPPercent.percent -eq $true) {
+                    $Skip = $false                    
+                    $SelectTOP100PERCENT = $SelectTOPPercent.Expression.Value
+                }
+                Else {
+                    $Skip = $true
+                }
+                It "Statement TOP 100 PERCENT" -Skip:$Skip {                    
+                    $SelectTOP100PERCENT | Should -Not -Be "100" -Because "a SELECT TOP 100 PERCENT statement has no effect specified on line $($Statement.StartLine), column $($Statement.StartColumn)"
+                }
+            }
+        }
+    }
+    Context "Checking SELECT with Identity" {
+        ForEach ($Batch in $ScriptObject.Fragment.Batches) {
+            $Statements = Get-Statement -Batch $Batch
+            ForEach ($Statement in $Statements.Statement) {
+                $StatementType = ($Statement.GetType()).Name
+                If ($StatementType -eq "SelectStatement") {
+                    $Skip = $false
+                    $SelectIdentity = $Statement.QueryExpression.FromClause
+                }
+                Else {
+                    $Skip = $true
+                }
+                It "Statement with SELECT Identity" -Skip:$Skip {
+                    $SelectIdentity | Should -Not -Be $NULL -Because "a SELECT statement should avoid identity specified on line $($Statement.StartLine), column $($Statement.StartColumn)"
+                }
+            }
+        }
+    }
+
+    Context "Checking NVARCHAR / VARCHAR without length" {
+        ForEach ($Batch in $ScriptObject.Fragment.Batches) {
+            $Statements = Get-Statement -Batch $Batch
+            ForEach ($Statement in $Statements.Statement) {
+                $StatementType = ($Statement.GetType()).Name
+                If ($StatementType -eq "DeclareVariableElement" -and $Statement.DataType.SqlDataTypeOption.ToString() -like "*VarChar") {
+                    $Skip = $false
+                    $ElementLength = $Statement.DataType.Parameters[0]
+                }
+                Else {
+                    $Skip = $true
+                }
+                It "Variable NVARCHAR / VARCHAR without length" -Skip:$Skip {
+                    $ElementLength | Should -Not -Be $NULL -Because "a length for NVARCHAR / VARCHAR should be specified on line $($Statement.StartLine), column $($Statement.StartColumn)"
+                }
+            }
+        }
+    }
+   
     Context "sp prefix for stored procedures" {
         ForEach ($Batch in $ScriptObject.Fragment.Batches) {
             $Statements = Get-Statement -Batch $Batch
@@ -76,15 +188,10 @@ Describe "Best Practices" -Tag "BestPractice" {
                 }
             }
         }
-    }
+    }    
 }
 
-
-    #Context All objects should include schema name
-    #Context Select * should not be used
-    #Context Update without WHERE should not exist
-    #TOP without ORDER BY
-    # TOP 100 %
+    #Context All objects should include schema name    
     # == NULL or <> NULL
-    # Use of @@IDENTITY
-    # NVARCHAR / VARCHAR without length
+    
+    
