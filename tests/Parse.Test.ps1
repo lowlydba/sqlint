@@ -110,6 +110,7 @@ Describe "Best Practices" -Tag "BestPractice" {
                 }
                 It "Statement TOP without ORDERBY" -Skip:$Skip {                    
                     $SelectOrderBy | Should -Not -Be $null -Because "a SELECT TOP statement should have ORDERBY Clause specified on line $($Statement.StartLine), column $($Statement.StartColumn)"
+    
                 }
             }
         }
@@ -138,15 +139,21 @@ Describe "Best Practices" -Tag "BestPractice" {
             $Statements = Get-Statement -Batch $Batch
             ForEach ($Statement in $Statements.Statement) {
                 $StatementType = ($Statement.GetType()).Name
-                If ($StatementType -eq "SelectStatement") {
-                    $Skip = $false
-                    $SelectIdentity = $Statement.QueryExpression.FromClause
+                If ($StatementType -eq "SelectStatement") {                    
+                    ForEach($Element in $Statement.QueryExpression.SelectElements)
+                    {
+                        if($Element.Expression.Name -like "@@*identity")
+                        {
+                            $SelectIdentity = $Element.Expression.Name
+                            $Skip = $false
+                        }    
+                    }                
                 }
                 Else {
                     $Skip = $true
                 }
                 It "Statement with SELECT Identity" -Skip:$Skip {
-                    $SelectIdentity | Should -Not -Be $NULL -Because "a SELECT statement should avoid identity specified on line $($Statement.StartLine), column $($Statement.StartColumn)"
+                    $SelectIdentity | Should -Not -Be '@@Identity' -Because "a SELECT statement should avoid identity specified on line $($Statement.StartLine), column $($Statement.StartColumn)"
                 }
             }
         }
