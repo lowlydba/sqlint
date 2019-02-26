@@ -32,7 +32,7 @@ function Get-Statement {
                     ForEach ($su in $Statement.ThenStatement.StatementList.Statements) {
                         $Statements += Get-IndividualStatement -Statements $su
                     }
-                }                
+                }
                 Else {
                     $Statements += Get-IndividualStatement -Statements $Statement.ThenStatement
                 }
@@ -48,7 +48,7 @@ function Get-Statement {
             }
             #Handle BEGIN END Statements
             ElseIf ($Type -eq "BeginEndBlockStatement") {
-                
+
                 If ($Statement.StatementList) {
                     ForEach ($su in $Statement.StatementList.Statements) {
                         $Statements += Get-IndividualStatement -Statements $su
@@ -57,10 +57,10 @@ function Get-Statement {
                 else {
                     $Statements += Get-IndividualStatement -Statements $Statement
                 }
-            }            
+            }
             # Handle WHILE Statements
             ElseIf ($Type -eq "WhileStatement") {
-                
+
                 # Add statements within loop
                 If ($Statement.Statement.StatementList) {
                     ForEach ($su in $Statement.Statement.StatementList.Statements) {
@@ -95,10 +95,10 @@ function Get-Statement {
                 }#>
             }
             #DeclareVariable Statement
-            ElseIf ($Type -eq "DeclareVariableStatement") {                                
+            ElseIf ($Type -eq "DeclareVariableStatement") {
                     ForEach ($su in $Statement.Declarations) {
                         $Statements += Get-IndividualStatement -Statements $su
-                    }                
+                    }
             }
             #Normal Statement
             Else {

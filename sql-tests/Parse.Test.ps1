@@ -102,13 +102,13 @@ Describe "Best Practices" -Tag "BestPractice" {
                 $StatementType = ($Statement.GetType()).Name
                 $SelectTOP = $Statement.QueryExpression.TopRowFilter
                 If ($StatementType -eq "SelectStatement" -and $SelectTOP -ne $null) {
-                    $Skip = $false                    
+                    $Skip = $false
                     $SelectOrderBy = $Statement.QueryExpression.OrderByClause
                 }
                 Else {
                     $Skip = $true
                 }
-                It "Statement TOP without ORDERBY" -Skip:$Skip {                    
+                It "Statement TOP without ORDERBY" -Skip:$Skip {
                     $SelectOrderBy | Should -Not -Be $null -Because "a SELECT TOP statement should have ORDERBY Clause specified on line $($Statement.StartLine), column $($Statement.StartColumn)"
                 }
             }
@@ -121,13 +121,13 @@ Describe "Best Practices" -Tag "BestPractice" {
                 $StatementType = ($Statement.GetType()).Name
                 $SelectTOPPercent = $Statement.QueryExpression.TopRowFilter
                 If ($StatementType -eq "SelectStatement" -and $SelectTOPPercent.percent -eq $true) {
-                    $Skip = $false                    
+                    $Skip = $false
                     $SelectTOP100PERCENT = $SelectTOPPercent.Expression.Value
                 }
                 Else {
                     $Skip = $true
                 }
-                It "Statement TOP 100 PERCENT" -Skip:$Skip {                    
+                It "Statement TOP 100 PERCENT" -Skip:$Skip {
                     $SelectTOP100PERCENT | Should -Not -Be "100" -Because "a SELECT TOP 100 PERCENT statement has no effect specified on line $($Statement.StartLine), column $($Statement.StartColumn)"
                 }
             }
@@ -170,7 +170,7 @@ Describe "Best Practices" -Tag "BestPractice" {
             }
         }
     }
-   
+
     Context "sp prefix for stored procedures" {
         ForEach ($Batch in $ScriptObject.Fragment.Batches) {
             $Statements = Get-Statement -Batch $Batch
@@ -188,10 +188,9 @@ Describe "Best Practices" -Tag "BestPractice" {
                 }
             }
         }
-    }    
+    }
 }
 
-    #Context All objects should include schema name    
+    #Context All objects should include schema name
     # == NULL or <> NULL
-    
-    
+
