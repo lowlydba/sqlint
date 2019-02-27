@@ -34,9 +34,9 @@ Class GetFragmentVisitor : Microsoft.SqlServer.TransactSql.ScriptDom.TSqlFragmen
     }        
 
 
-    [string] DumpStatistics()
+    DumpStatistics()
     {
-       return "select count $($script:SELECTcount) Insert Count $($script:INSERTcount) Update count $($script:UPDATEcount) Delete count $($script:DELETEcount)"
+       Write-verbose "select count $($script:SELECTcount) Insert Count $($script:INSERTcount) Update count $($script:UPDATEcount) Delete count $($script:DELETEcount)"
     }
 
 }
