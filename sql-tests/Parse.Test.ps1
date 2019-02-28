@@ -110,6 +110,7 @@ Describe "Best Practices" -Tag "BestPractice" {
                 }
                 It "Statement TOP without ORDERBY" -Skip:$Skip {
                     $SelectOrderBy | Should -Not -Be $null -Because "a SELECT TOP statement should have ORDERBY Clause specified on line $($Statement.StartLine), column $($Statement.StartColumn)"
+
                 }
             }
         }
@@ -139,14 +140,20 @@ Describe "Best Practices" -Tag "BestPractice" {
             ForEach ($Statement in $Statements.Statement) {
                 $StatementType = ($Statement.GetType()).Name
                 If ($StatementType -eq "SelectStatement") {
-                    $Skip = $false
-                    $SelectIdentity = $Statement.QueryExpression.FromClause
+                    ForEach($Element in $Statement.QueryExpression.SelectElements)
+                    {
+                        if($Element.Expression.Name -like "@@*identity")
+                        {
+                            $SelectIdentity = $Element.Expression.Name
+                            $Skip = $false
+                        }
+                    }
                 }
                 Else {
                     $Skip = $true
                 }
                 It "Statement with SELECT Identity" -Skip:$Skip {
-                    $SelectIdentity | Should -Not -Be $NULL -Because "a SELECT statement should avoid identity specified on line $($Statement.StartLine), column $($Statement.StartColumn)"
+                    $SelectIdentity | Should -Not -Be '@@Identity' -Because "a SELECT statement should avoid identity specified on line $($Statement.StartLine), column $($Statement.StartColumn)"
                 }
             }
         }
@@ -184,13 +191,44 @@ Describe "Best Practices" -Tag "BestPractice" {
                     $Skip = $true
                 }
                 It "Stored procedure with sp_ prefix" -Skip:$Skip {
-                    $StoredProcName | Should -Not -BeLike "sp_*" -Because "that is bad naming.  $($Statement.StartLine), column $($Statement.StartColumn)"
+                    $StoredProcName | Should -Not -BeLike "sp_*" -Because "that is bad naming. Line $($Statement.StartLine), column $($Statement.StartColumn)"
+                }
+            }
+        }
+    }
+
+    Context "ISNULL condition check" {
+        ForEach ($Batch in $ScriptObject.Fragment.Batches) {
+
+            $Statements = Get-Statement -Batch $Batch
+            ForEach($Statement in $Batch.Statements)
+            {
+                IF(($Statement.GetType()).Name -eq 'IfStatement')
+                {
+                    $Statements += Get-IndividualStatement -Statements $Statement
+                }
+
+            }
+
+            ForEach ($Statement in $Statements.Statement) {
+                $StatementType = ($Statement.GetType()).Name
+                If ($StatementType -in ('SelectStatement','DeleteStatement','UpdateStatement','IfStatement')) {
+                    $Skip = $false
+                    $stringbuilder = New-Object -TypeName "System.Text.StringBuilder";
+                    for ($counter = $Statement.FirstTokenIndex; $counter -lt $Statement.LastTokenIndex+1;$counter++)
+                        {
+                                $stringbuilder.Append($Batch.ScriptTokenStream[$counter].Text.TRIMSTART().TRIMEND());
+                        }
+                }
+                Else {
+                    $Skip = $true
+                }
+                It "Statements with '<> ==' NULL conditions" -Skip:$Skip {
+                    $stringbuilder | Should -Not -BeLike "*=NULL*" -Because "that is bad coding. Line $($Statement.StartLine), column $($Statement.StartColumn)"
+                    $stringbuilder | Should -Not -BeLike "*<>NULL*" -Because "that is bad coding. Line $($Statement.StartLine), column $($Statement.StartColumn)"
                 }
             }
         }
     }
 }
-
-    #Context All objects should include schema name
-    # == NULL or <> NULL
 
