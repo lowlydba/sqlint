@@ -62,6 +62,6 @@ function Invoke-SlCheck {
         }
     }
     end {
-
+        return $ScriptObject
     }
 }

@@ -1,4 +1,3 @@
-
 function Get-IndividualStatement {
     Param (
         [Parameter(Mandatory = $true)]
@@ -19,11 +18,17 @@ function Get-Statement {
     Param (
 		[Parameter(Mandatory = $true)]
             $Batch)
-    begin {
-        $Statements = @()
+    begin {        
+        $StatementTypes = @('IfStatement','WhileStatement','BeginEndBlockStatement','DeclareVariableStatement','CreateProcedureStatement')
+        if ($null -eq $checkflag)
+        {
+            $Statements = @()            
+            $NestedStatements = @()   
+            $NestedStatements = $Batch.Statements
+        }                      
     }
     process {
-        ForEach ($Statement in $Batch.Statements) {
+        ForEach ($Statement in $NestedStatements) {
             $Type = $Statement.GetType().Name
             # Handle IF Statements
             If ($Type -eq "IfStatement") {
@@ -39,15 +44,17 @@ function Get-Statement {
                 If ($null -ne ($Statement.ElseStatement)){
                     # Add ELSE statements
                     If ($Statement.ElseStatement.StatementList) {
-                        $Statements += Get-IndividualStatement -Statements $Statement.ElseStatement.StatementList.Statements
+                        ForEach ($su in $Statement.ElseStatement.StatementList.Statements) {
+                            $Statements += Get-IndividualStatement -Statements $su
+                        }
                     }
                     Else {
                         $Statements += Get-IndividualStatement -Statements $Statement.ElseStatement
                     }
                 }
             }
-            #Handle BEGIN END Statements
-            ElseIf ($Type -eq "BeginEndBlockStatement") {
+            #Handle BEGIN END Statements # Handle WHILE Statements
+            ElseIf (($Type -eq "WhileStatement") -or ($Type -eq "BeginEndBlockStatement")) {
                 
                 If ($Statement.StatementList) {
                     ForEach ($su in $Statement.StatementList.Statements) {
@@ -55,45 +62,19 @@ function Get-Statement {
                     }
                 }
                 else {
-                    $Statements += Get-IndividualStatement -Statements $Statement
+                    $Statements += Get-IndividualStatement -Statements $Statement.Statement
                 }
-            }            
-            # Handle WHILE Statements
-            ElseIf ($Type -eq "WhileStatement") {
-                
-                # Add statements within loop
-                If ($Statement.Statement.StatementList) {
-                    ForEach ($su in $Statement.Statement.StatementList.Statements) {
-                        $StatementObject = [PSCustomObject]@{
-                            Statement     = $su
-                        }
-                        $Statements += $StatementObject
-                    }
-                }
-                Else {
-                    $StatementObject = [PSCustomObject]@{
-                        Statement     = $Statement.Statement
-                    }
-                    $Statements += $StatementObject
-                }
-            }
+            }                     
+            
             # Handle stored proc contents
             ElseIf ($Type -eq "CreateProcedureStatement") {
                 $Statements += $Statement
                 If ($Statement.StatementList) {
-                    ForEach ($su in $Statement.StatementList.Statements) {
-                        ForEach ($su2 in $su.StatementList.Statements) {
+                    ForEach ($su in $Statement.StatementList.Statements) {                        
                             $Statements += Get-IndividualStatement -Statements $su2
                         }
-                    }
+                    }            
                 }
-              <#  Else {
-                    $StatementObject = [PSCustomObject]@{
-                        Statement     = $Statement.Statement
-                    }
-                    $Statements += $StatementObject
-                }#>
-            }
             #DeclareVariable Statement
             ElseIf ($Type -eq "DeclareVariableStatement") {                                
                     ForEach ($su in $Statement.Declarations) {
@@ -103,7 +84,21 @@ function Get-Statement {
             #Normal Statement
             Else {
                 $Statements += Get-IndividualStatement -Statements $Statement
+            }           
+        }        
+        $checkflag = $null
+        $NestedStatements = @()
+
+        ForEach ($Statement in $Statements | Where-Object Statement -ne 'CreateProcedureStatement') {            
+            If ($StatementTypes -contains $Statement.Statement.GetType().Name) {   
+                $checkflag = 1                   
+                $NestedStatements += $Statement.Statement                                
             }
+        }
+        $Statements = $Statements | Where-Object {$_.Statement -notin $NestedStatements}
+        if($NestedStatements.Length -ne 0) 
+        {       
+            $Statements += Get-Statement -Batch $NestedStatements        
         }
     }
     end {
