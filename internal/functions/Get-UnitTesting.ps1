@@ -7,34 +7,40 @@ Describe "Check Invoke-SlCheck" {
                                     
                                     if(name = NULL)
                                     SELECT 'Hai' from table3"
-    
-    $ScriptDomAssembly = "..\internal\bin\Microsoft.SqlServer.TransactSql.ScriptDom.dll"
-    $Parser = Get-Parser -ScriptDomAssembly $ScriptDomAssembly
-    $Reader = New-Object System.IO.StreamReader("$TestDrive\test.sql")
-    $Errors = $null     
-    $TSQLFragment = [Microsoft.SqlServer.TransactSql.ScriptDom.TSqlFragment]  
-    $TSQLFragment = $Parser.Parse($Reader, [ref] $Errors)        
-    $Reader.Close();
-    $Reader.Dispose();      
-    $TSQLFragmentVistor = New-Object GetFragmentVisitor
-    $TSQLFragment.Accept($TSQLFragmentVistor);
-    $SQLVistor.DumpStatistics();   
+        
+    $ScriptObject = Invoke-SlCheck -File "$TestDrive\test.sql"      
+    # $ScriptDomAssembly = "..\internal\bin\Microsoft.SqlServer.TransactSql.ScriptDom.dll"
+    # $Parser = Get-Parser -ScriptDomAssembly $ScriptDomAssembly
+    # $Reader = New-Object System.IO.StreamReader("$TestDrive\test.sql")
+    # $Errors = $null     
+    # $TSQLFragment = [Microsoft.SqlServer.TransactSql.ScriptDom.TSqlFragment]  
+    # $TSQLFragment = $Parser.Parse($Reader, [ref] $Errors)        
+    # $Reader.Close();
+    # $Reader.Dispose();      
+    # $TSQLFragmentVistor = New-Object GetFragmentVisitor
+    # $TSQLFragment.Accept($TSQLFragmentVistor);
+    # $SQLVistor.DumpStatistics(); 
+    $statementcount=0
+    Foreach($su in $ScriptObject.Fragment.Batches)
+    {
+        $statement = Get-Statement -Batch $su
+        $statementcount =+ $statement.count;
+
+    }
     
  	It "Properly reads in the file without erroring" {
- 	    $TSQLFragment.Errors.Count | Should -Be 0 -Because "we cannot run scripts that do not parse"
- 	}
-
+ 	    $ScriptObject.Errors.Count | Should -be 0 -Because "we cannot run scripts that do not parse"
+     }
+     
+    It "Get-Statement returns correct statement count" {     
+     $statementcount | Should -Be 4 -Because "Check statement counts"
+     }   
 
      It "Check-Invoke-SlCheck returns correct error count" {
-     $TSQLFragment.Errors.Count | Should -Be 0 -Because "Error count should match"
-     }
-
-    #  It "Get-Statement returns correct statement count" {
-    #  $Statements = Get-Statement -Batch $TSQLFragment.Batches[0]    
-    #  $Statements.count | Should -Be 0 -Because "we cannot run scripts that do not parse"
-    #  }
-
-#     It "Get-Statement reads IF/ELSE correctly" {
-
-# }
-}
+        $ScriptObject.Errors.Count | Should -Be 0 -Because "Correct Error count"
+    }
+}   
+    
+    Describe "Get-Statement reads IF/ELSE correctly" {
+    
+    }
